@@ -10,27 +10,31 @@
         <form id="registerForm" enctype="multipart/form-data" novalidate>
             @csrf
 
+            <!-- Name -->
             <div class="form-group mb-2 d-flex align-items-center">
                 <label class="me-2 mb-0" style="width: 35%;">Name</label>
                 <input type="text" name="name" class="form-control form-control-sm animated-input" required>
             </div>
             <span class="text-danger error-text name_error"></span>
 
+            <!-- Email -->
             <div class="form-group mb-2 d-flex align-items-center">
                 <label class="me-2 mb-0" style="width: 35%;">Email</label>
                 <input type="email" name="email" class="form-control form-control-sm animated-input" required>
             </div>
             <span class="text-danger error-text email_error"></span>
 
+            <!-- Contact -->
             <div class="form-group mb-2 d-flex align-items-center">
                 <label class="me-2 mb-0" style="width: 35%;">Contact</label>
                 <input type="text" name="contact" class="form-control form-control-sm animated-input" required>
             </div>
             <span class="text-danger error-text contact_error"></span>
 
+            <!-- Password -->
             <div class="form-group mb-2 d-flex align-items-center">
                 <label class="me-2 mb-0" style="width: 35%;">Password</label>
-                <div class="input-group position-relative" style="width: 65%;">
+                <div class="input-group position-relative w-100">
                     <input type="password" name="password" class="form-control form-control-sm pe-5 animated-input" id="passwordField" required>
                     <button class="btn toggle-password position-absolute end-0 top-0 h-100 px-2 border-0 bg-transparent" type="button" tabindex="-1">
                         <i class="bi bi-eye-slash" id="toggleIcon"></i>
@@ -39,19 +43,21 @@
             </div>
             <span class="text-danger error-text password_error"></span>
 
-            <!-- Added password confirmation field -->
+            <!-- Confirm Password -->
             <div class="form-group mb-2 d-flex align-items-center">
                 <label class="me-2 mb-0" style="width: 35%;">Confirm Password</label>
                 <input type="password" name="password_confirmation" class="form-control form-control-sm animated-input" required>
             </div>
             <span class="text-danger error-text password_confirmation_error"></span>
 
+            <!-- Profile Picture -->
             <div class="form-group mb-2 d-flex align-items-center">
                 <label class="me-2 mb-0" style="width: 35%;">Picture</label>
                 <input type="file" name="profile_picture" class="form-control form-control-sm" accept="image/*">
             </div>
             <span class="text-danger error-text profile_picture_error"></span>
 
+            <!-- Submit Button -->
             <div class="mt-3 text-center">
                 <button type="submit" class="btn btn-darkgreen btn-sm px-4">Register</button>
             </div>
@@ -162,4 +168,3 @@ document.querySelector('.toggle-password').addEventListener('click', function ()
 });
 </script>
 @endsection
-    
