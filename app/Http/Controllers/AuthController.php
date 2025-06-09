@@ -2,25 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use App\Models\User;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Notification;
 
 class AuthController extends Controller
 {
+    // Show Register Page
     public function registerPage()
     {
         return view('auth.register');
     }
 
+    // Show Login Page
     public function loginPage()
     {
         return view('auth.login');
     }
 
+    // Handle Registration
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,25 +41,28 @@ class AuthController extends Controller
         }
 
         $data = $request->only('name', 'email', 'contact', 'password');
+        $data['password'] = bcrypt($data['password']); // Secure password
 
-        // Agar profile picture hai to handle karo
         if ($request->hasFile('profile_picture')) {
             $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
         }
 
-        $user = User::create($data); // Password auto bcrypt 
+        $user = User::create($data);
+
+        // Fire email verification event
+        event(new Registered($user));
 
         Auth::login($user);
 
         return response()->json([
             'success' => true,
-            'message' => 'Registered successfully',
+            'message' => 'Registered successfully. Please verify your email before login.',
             'redirect_url' => route('dashboard')
         ]);
     }
 
+    // Handle Login
     public function store(Request $request)
-
     {
         $request->validate([
             'email' => 'required|email',
@@ -63,9 +71,18 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
-        // dd(Auth::attempt($credentials), $credentials);
-
         if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+
+            // Check if email is verified
+            if (is_null($user->email_verified_at)) {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'Your email address is not verified. Please verify your email before logging in.',
+                ])->withInput();
+            }
+
             $request->session()->regenerate();
             return redirect()->intended(route('home'));
         }
@@ -74,6 +91,8 @@ class AuthController extends Controller
             'email' => 'Invalid credentials.',
         ])->withInput();
     }
+
+    // Logout
     public function logout(Request $request)
     {
         Auth::logout();
@@ -81,7 +100,60 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Redirect to dashboard page after logout
         return redirect()->route('dashboard');
+    }
+
+    // Show Forgot Password Page
+    public function requestForm()
+    {
+        return view('auth.forgot-password');
+    }
+
+    // Send Password Reset Link
+    public function sendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with(['status' => __($status)])
+            : back()->withErrors(['email' => __($status)]);
+    }
+
+    // Show Reset Form
+    public function showResetForm(Request $request, $token)
+    {
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => $request->query('email'),
+        ]);
+    }
+
+    // Handle New Password Submission
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password)
+                ])->save();
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login.page')->with('status', __($status))
+            : back()->withErrors(['email' => [__($status)]]);
     }
 }
