@@ -5,16 +5,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
-
 /*
 |--------------------------------------------------------------------------
 | Public Routes
 |--------------------------------------------------------------------------
 */
-// Agar aapka dashboard protected hai, to yeh route middleware 'auth' ke andar hona chahiye.
-// Filhaal main ise public chhod raha hoon.
-Route::get('/', fn() => view('dashboard'))->name('dashboard');
-
+Route::get('/', fn() => redirect()->route('login.page'));
 Route::get('/login', [AuthController::class, 'loginPage'])->name('login.page');
 Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 
@@ -23,43 +19,43 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.st
 
 Route::get('/forgot-password', [AuthController::class, 'forgotPasswordPage'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
-
 Route::get('/reset-password/{token}', [AuthController::class, 'resetPasswordPage'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPasswordSubmit'])->name('password.update');
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// Verification Notice
-Route::get('/email/verify', function () {
-    return view('auth.verify-email');
-})->middleware('auth')->name('verification.notice');
-
-// Verification Handler
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $user = $request->user();
-
-    if (!$user->hasVerifiedEmail()) {
-        $user->email_verified_at = now();  // ✅ manual update
-        $user->save();                     // ✅ save to DB
-        event(new \Illuminate\Auth\Events\Verified($user));  // ✅ Laravel event fire
-    }
-
-    return redirect('/dashboard');
-})->middleware(['auth', 'signed'])->name('verification.verify');
-
-// Resend Link
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-    return back()->with('message', 'Verification link sent!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 /*
 |--------------------------------------------------------------------------
-| Protected Routes
+| Email Verification Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+
+    // Show email verification notice
+    Route::get('/email/verify', fn() => view('auth.verify-email'))->name('verification.notice');
+
+    // Handle email verification
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('login.page')->with('success', '✅ Email verified! You can now login.');
+    })->middleware(['signed'])->name('verification.verify');
+
+    // Resend verification email
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', '📤 Verification link sent!');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Only for verified & logged-in users)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified'])->prefix('myapp')->group(function () {
-    Route::view('/home', 'home')->name('home');
 
+    // Home/Dashboard
+    Route::get('/home', fn() => view('home'))->name('home');
+
+    // User Management CRUD
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -67,6 +63,10 @@ Route::middleware(['auth', 'verified'])->prefix('myapp')->group(function () {
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 });
-// Optional redirects for convenience
+/*
+|--------------------------------------------------------------------------
+| Convenience Redirects
+|--------------------------------------------------------------------------
+*/
 Route::get('/users', fn() => redirect()->route('users.index'));
 Route::get('/home', fn() => redirect()->route('home'));

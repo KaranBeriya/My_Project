@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
@@ -40,16 +39,16 @@ class AuthController extends Controller
         }
 
         $data = $request->only('name', 'email', 'contact');
-        $data['password'] = Hash::make($request->password); // encrypt password
 
-        // Handle profile picture
+        $data['password'] = $request->password;
+
         if ($request->hasFile('profile_picture')) {
             $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
         }
 
         $user = User::create($data);
 
-        // Send email verification
+        // Email verification event
         event(new Registered($user));
 
         return response()->json([
@@ -61,33 +60,22 @@ class AuthController extends Controller
 
     // Handle Login
     public function login(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required|string|min:6',
-    ]);
+    {
+        $credentials = $request->only('email', 'password');
 
-    $credentials = $request->only('email', 'password');
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
 
-    if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();
+            if (!$user->hasVerifiedEmail()) {
+                Auth::logout();
+                return redirect()->route('login.page')->with('error', 'Please verify your email address before logging in.');
+            }
 
-        // verification check / email verified 
-        if (!Auth::user()->hasVerifiedEmail()) {
-            Auth::logout();
-            return back()->withErrors([
-                'email' => 'Please verify your email address before logging in.'
-            ])->withInput();
+            return redirect()->intended('home');
         }
 
-        // ✅ redirect to dashboard if verified
-        return redirect()->intended(route('home'));
+        return redirect()->back()->with('error', 'Invalid credentials');
     }
-
-    return back()->withErrors([
-        'email' => 'Invalid credentials.'
-    ])->withInput();
-}
 
 
     // Handle Logout
@@ -136,9 +124,8 @@ class AuthController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password)
-                ])->save();
+                $user->password = $password;
+                $user->save();
             }
         );
 

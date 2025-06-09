@@ -1,21 +1,22 @@
 @extends('layouts.app')
 
-@section('title', 'Verify Email')
-
 @section('content')
-<div class="container mt-5 text-center">
-    <h4>Verify Your Email Address</h4>
-    <p>
-        We have sent a verification link to your email.  
-        Please check your inbox (or spam folder).
-    </p>
+<div class="container">
+    <h2>Verify Your Email Address</h2>
+
     @if (session('message'))
-        <div class="alert alert-success">{{ session('message') }}</div>
+        <div class="alert alert-success">
+            {{ session('message') }}
+        </div>
     @endif
 
-    <form method="POST" action="{{ route('verification.send') }}">
-        @csrf
-        <button type="submit" class="btn btn-darkgreen mt-3">Resend Verification Email</button>
-    </form>
+    <p>
+        Please check your email for a verification link.
+        If you did not receive the email,
+        <form method="POST" action="{{ route('verification.send') }}">
+            @csrf
+            <button type="submit" class="btn btn-link p-0 m-0 align-baseline">click here to request another</button>.
+        </form>
+    </p>
 </div>
 @endsection
