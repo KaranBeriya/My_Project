@@ -17,7 +17,9 @@
                     <i class="bi bi-eye-slash" id="toggleIcon"></i>
                 </button>
             </div>
-
+            <div class="text-end mt-2">
+                <a href="{{ route('password.request') }}" class="text-decoration-none">Forgot Password?</a>
+            </div>
             <button type="submit" class="btn btn-darkgreen w-100">Login</button>
         </form>
 

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -24,4 +25,7 @@ class User extends Authenticatable
     {        
         $this->attributes['password'] = Hash::needsRehash($password) ? Hash::make($password) : $password;
     }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
 }
