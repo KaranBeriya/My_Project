@@ -5,7 +5,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Mail; // ✅ Mail class include kiya
+use App\Models\User;
 /*
 |--------------------------------------------------------------------------
 | Public Routes (Only for guests)
@@ -27,18 +28,20 @@ Route::post('forgot-password', [AuthController::class, 'sendResetLink'])->name('
 Route::get('reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
-
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
 
 Route::get('/email/verify', function () {
     return view('auth.verify-email');
 })->middleware('auth')->name('verification.notice');
 
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();  
+    Auth::loginUsingId($request->route('id')); // ✅ User ko manually login kar rahe hain (testing ke liye)
+
+    //dd("✅ Verify route chal gaya", $request->user()); // 👈 Debug karo yahaan
+
+    $request->fulfill(); // ⚠️ Ye line temporarily comment bhi kar sakte ho testing me
     return redirect('/dashboard')->with('message', 'Email verified successfully!');
-})->middleware(['auth', 'signed'])->name('verification.verify');
+})->middleware(['signed'])->name('verification.verify'); // ❌ 'auth' ha
 
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
@@ -68,4 +71,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| ✅ Test Mail Route (Gmail SMTP check)
+|--------------------------------------------------------------------------
+*/
+Route::get('/test-mail', function () {
+    Mail::raw('Email Verification.', function ($message) {
+        $message->to('rajakhed@gmail.com') // ✅ Yahan apna Gmail ID likho
+                ->subject('Laravel Test Email');
+    });
+
+    return 'Mail sent!';
+});
+
+Route::get('/force-login', function () {
+    $user = User::find(21); // 👈 Yahan apna user ID daalein
+    Auth::login($user);
+    return '✅ Manually logged in as user ID: ' . $user->id;
 });
