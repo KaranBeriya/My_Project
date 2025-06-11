@@ -9,6 +9,8 @@ use Illuminate\Auth\Events\Verified;
 use App\Models\User;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Mail\WelcomeUser;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +38,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 | Email Verification Routes
 |--------------------------------------------------------------------------
 */
+Route::get('/preview-email', function () {
+    $user = User::latest()->first();
+    return new WelcomeUser($user);
+});
 
 // Show verify email prompt (only if logged in)
 Route::get('/email/verify', fn() => view('auth.verify-email'))

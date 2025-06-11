@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeUser;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -40,7 +42,7 @@ class AuthController extends Controller
         }
 
         $data = $request->only('name', 'email', 'contact', 'password');
-        $data['password'] = bcrypt($data['password']); // Secure password
+        $data['password'] = Hash::make($data['password']);
 
         if ($request->hasFile('profile_picture')) {
             $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
@@ -48,11 +50,11 @@ class AuthController extends Controller
 
         $user = User::create($data);
 
-        // Fire email verification event
+        // Fire Laravel's email verification process
         event(new Registered($user));
 
-        // Email verification event
-        event(new Registered($user));
+        // Send welcome email with verification link
+        Mail::to($user->email)->send(new WelcomeUser($user));
 
         return response()->json([
             'success' => true,
@@ -69,12 +71,11 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // Check if email is verified
             if (is_null($user->email_verified_at)) {
                 Auth::logout();
 
                 return back()->withErrors([
-                    'email' => 'Your email address is not verified. Please verify your email before logging in.',
+                    'email' => 'Your email address is not verified. Please check your inbox.',
                 ])->withInput();
             }
 
@@ -82,7 +83,9 @@ class AuthController extends Controller
             return redirect()->intended(route('home'));
         }
 
-        return redirect()->back()->with('error', 'Invalid credentials');
+        return back()->withErrors([
+            'email' => 'Invalid credentials.'
+        ])->withInput();
     }
 
     // Logout
@@ -95,7 +98,7 @@ class AuthController extends Controller
         return redirect()->route('dashboard');
     }
 
-    // Show Forgot Password Page
+    // Forgot Password Form
     public function requestForm()
     {
         return view('auth.forgot-password');
@@ -108,16 +111,14 @@ class AuthController extends Controller
             'email' => 'required|email|exists:users,email',
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::RESET_LINK_SENT
             ? back()->with(['status' => __($status)])
             : back()->withErrors(['email' => __($status)]);
     }
 
-    // Show Reset Form
+    // Show Reset Password Form
     public function showResetForm(Request $request, $token)
     {
         return view('auth.reset-password', [
