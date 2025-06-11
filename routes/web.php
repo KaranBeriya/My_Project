@@ -12,7 +12,6 @@ use App\Models\User;
 | Public Routes (Only for guests)
 |--------------------------------------------------------------------------
 */
-
 Route::get('/', function () {
     return view('dashboard'); 
 })->name('dashboard');
