@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
+use App\Notifications\NewUserRegistered;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeUser;
 use Illuminate\Support\Facades\Hash;
@@ -48,12 +50,17 @@ class AuthController extends Controller
             $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
         }
 
+        // ✅ Create the user
         $user = User::create($data);
 
-        // Fire Laravel's email verification process
+        // ✅ Notify all other users (except the newly registered one)
+        $allUsers = User::where('id', '!=', $user->id)->get();
+        Notification::send($allUsers, new NewUserRegistered($user));
+
+        // ✅ Trigger email verification
         event(new Registered($user));
 
-        // Send welcome email with verification link
+        // ✅ Send welcome email with verification link
         Mail::to($user->email)->send(new WelcomeUser($user));
 
         return response()->json([

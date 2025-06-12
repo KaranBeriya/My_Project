@@ -86,7 +86,6 @@
             display: none;
         }
 
-        /* Updated nav-link and icon styles with animation */
         .nav-link {
             color: #ccc;
             padding: 10px 15px;
@@ -99,8 +98,8 @@
 
         .nav-link i {
             font-size: 1.2rem !important;
-            color: #9df0aa;
-            width: 24px;
+            color:rgb(127, 192, 137);
+            width: 28px;
             text-align: center;
             transition: color 0.3s ease, transform 0.3s ease;
         }
@@ -120,12 +119,11 @@
 
         .nav-link.active,
         .nav-link:hover {
-            background-color: #1f1f1f;
+            /* background-color: #1f1f1f; */
             color: #9df0aa;
             border-radius: 5px;
         }
 
-        /* Logout button style updates */
         .logout-container {
             margin-top: auto;
             padding: 15px;
@@ -223,6 +221,20 @@
             color: #0b2e13;
             box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
         }
+
+        /* === Notification Bell Style === */
+        .bell-icon::after {
+            display: none !important; /* removes default arrow */
+        }
+
+        .bell-icon i {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .bell-icon:hover i {
+            transform: scale(1.3);
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -266,7 +278,37 @@
     <div id="main-content">
         <nav class="navbar navbar-expand-lg px-4">
             <span id="toggleSidebar" class="me-3" style="font-size: 1.5rem; cursor: pointer;">☰</span>
-            <a class="navbar-brand" href="#">Welcome, {{ Auth::user()->name ?? 'User' }}</a>
+            <a class="navbar-brand me-auto" href="#">Welcome, {{ Auth::user()->name ?? 'User' }}</a>
+
+            <!-- 🔔 Notification Bell -->
+            @php
+                $unreadNotifications = Auth::user()->unreadNotifications;
+            @endphp
+            <div class="position-relative dropdown me-3">
+                <a class="nav-link position-relative bell-icon" href="#" role="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-bell fa-lg" style="padding-left:20px"></i>
+                    @if($unreadNotifications->count())
+                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+                              style="font-size: 0.7rem; padding: 0.3em 0.45em;">
+                            {{ $unreadNotifications->count() }}
+                        </span>
+                    @endif
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notifDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                    @forelse($unreadNotifications as $notification)
+                        <li class="dropdown-item small text-dark">
+                            {{ $notification->data['message'] ?? 'New Notification' }}
+                            <form action="{{ route('notifications.markAsRead', $notification->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button class="btn btn-sm btn-link text-primary p-0">Mark as read</button>
+                            </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                    @empty
+                        <li class="dropdown-item text-muted">No new notifications</li>
+                    @endforelse
+                </ul>
+            </div>
         </nav>
 
         <div class="content">
@@ -288,7 +330,7 @@
             });
         });
     </script>
-            @stack('script')
+    @stack('script')
 
 </body>
 </html>
