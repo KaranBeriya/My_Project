@@ -27,10 +27,10 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     // Optional: password auto hashing
-    public function setPasswordAttribute($password)
-    {
-        $this->attributes['password'] = bcrypt($password);
-    }
+    // public function setPasswordAttribute($password)
+    // {
+    //     $this->attributes['password'] = bcrypt($password);
+    // }
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPassword($token));
