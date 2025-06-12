@@ -59,7 +59,7 @@
 
             <!-- Submit Button -->
             <div class="mt-3 text-center">
-                <button type="submit" class="btn btn-darkgreen btn-sm px-4">Register</button>
+                <button type="submit" class="btn btn-darkgreen btn-sm px-4" id="submitBtn">Register</button>
             </div>
         </form>
 
@@ -129,7 +129,17 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
 
     const form = this;
     const formData = new FormData(form);
+    const submitButton = document.getElementById('submitBtn');
+    const successMessage = document.getElementById('successMessage');
+
+    // Clear previous errors
     document.querySelectorAll('.error-text').forEach(el => el.textContent = '');
+    successMessage.classList.add('d-none');
+    successMessage.textContent = '';
+
+    // Disable the button and change text
+    submitButton.disabled = true;
+    submitButton.innerHTML = 'Registering...';
 
     fetch("{{ route('register.store') }}", {
         method: 'POST',
@@ -140,14 +150,17 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     })
     .then(res => res.json())
     .then(data => {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Register';
+
         if (data.errors) {
             for (let key in data.errors) {
                 let errorSpan = document.querySelector(`.${key}_error`);
                 if (errorSpan) errorSpan.textContent = data.errors[key][0];
             }
         } else if (data.success) {
-            document.getElementById('successMessage').textContent = data.message;
-            document.getElementById('successMessage').classList.remove('d-none');
+            successMessage.textContent = data.message;
+            successMessage.classList.remove('d-none');
             form.reset();
             setTimeout(() => window.location.href = data.redirect_url || '/', 1000);
         }
@@ -155,6 +168,8 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
     .catch(err => {
         console.error('Error:', err);
         alert('Something went wrong, please try again.');
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Register';
     });
 });
 

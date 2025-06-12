@@ -31,6 +31,7 @@ class WelcomeUser extends Mailable
             ->with([
                 'user' => $this->user,
                 'verificationUrl' => $verificationUrl
+                
             ])
             ->withSwiftMessage(function ($message) {
                 // Ensure proper Content-Type is HTML
