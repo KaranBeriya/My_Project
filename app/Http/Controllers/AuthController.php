@@ -8,9 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
-use App\Notifications\NewUserRegistered;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\NewUserRegistered;
+use App\Notifications\RegistrationSuccessNotification;
 
 class AuthController extends Controller
 {
@@ -29,41 +30,53 @@ class AuthController extends Controller
     // Handle Registration
     public function register(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'contact' => 'nullable|string|max:20',
-            'password' => 'required|string|min:6|confirmed',
-            'profile_picture' => 'nullable|image|max:5120',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'contact' => 'nullable|string|max:20',
+                'password' => 'required|string|min:6|confirmed',
+                'profile_picture' => 'nullable|image|max:5120',
+            ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $data = $request->only('name', 'email', 'contact', 'password');
+            $data['password'] = bcrypt($data['password']);
+
+            if ($request->hasFile('profile_picture')) {
+                $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
+            }
+
+            $user = User::create($data);
+
+            // Notify all other users
+            $otherUsers = User::where('id', '!=', $user->id)->get();
+            Notification::send($otherUsers, new \App\Notifications\NewUserRegistered($user));
+
+            // Notify the user with success email
+            $user->notify(new \App\Notifications\RegistrationSuccessNotification($user));
+
+            // Trigger verification
+            event(new \Illuminate\Auth\Events\Registered($user));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registered successfully. Please verify your email.',
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Registration error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong, please try again.',
+                'error' => $e->getMessage(), // 🛠️ show in dev mode
+            ], 500);
         }
-
-        $data = $request->only('name', 'email', 'contact', 'password');
-        $data['password'] = Hash::make($data['password']);
-
-        if ($request->hasFile('profile_picture')) {
-            $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
-        }
-
-        // ✅ Create the user
-        $user = User::create($data);
-
-        // ✅ Notify all other users (except the newly registered one)
-        $allUsers = User::where('id', '!=', $user->id)->get();
-        Notification::send($allUsers, new NewUserRegistered($user));
-
-        // ✅ Trigger email verification (CustomVerifyEmail will be used automatically)
-        event(new Registered($user));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Registered successfully. Please verify your email before login.',
-            'redirect_url' => route('dashboard'),
-        ]);
     }
+
 
     // Handle Login
     public function store(Request $request)

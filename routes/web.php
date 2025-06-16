@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Mail\WelcomeUser;
+use App\Notifications\RegistrationSuccessNotification;
 
 /*
 |--------------------------------------------------------------------------
@@ -128,6 +129,11 @@ Route::get('/test-mail', function () {
         $message->to('karanberiya9@gmail.com')->subject('Laravel Test Email');
     });
     return 'Mail sent!';
+});
+
+Route::get('/preview-registration-mail', function () {
+    $user = User::first(); // test user
+    return (new RegistrationSuccessNotification($user))->toMail($user);
 });
 
 // Optional force login for testing
