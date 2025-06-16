@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewUserRegistered;
+use App\Notifications\RegistrationSuccessNotification;
 
 class UserController extends Controller
 {
@@ -24,7 +25,7 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'contact' => 'nullable|string|max:20',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
-        ],[
+        ], [
             'name.required' => 'Name is required',
         ]);
 
@@ -43,11 +44,14 @@ class UserController extends Controller
             'profile_picture' => $profilePicturePath,
         ]);
 
-        // ✅ Send notification to all users
-        $allUsers = User::all(); // or filter only admins if needed
-        Notification::send($allUsers, new NewUserRegistered($user));
+        // ✅ Notify all other users
+        $otherUsers = User::where('id', '!=', $user->id)->get();
+        Notification::send($otherUsers, new NewUserRegistered($user));
 
-        // Return JSON response with id and other details
+        // ✅ Send registration success email to the new user
+        $user->notify(new RegistrationSuccessNotification($user));
+
+        // ✅ Return JSON response with user info
         return response()->json([
             'success' => true,
             'message' => 'User created successfully',
