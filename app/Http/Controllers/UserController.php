@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;  // assuming you use default User model
+use App\Models\User;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewUserRegistered;
 
 class UserController extends Controller
 {
@@ -20,8 +22,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'contact' => 'nullable|string|max:20', // optional, adjust as needed
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // max 5MB
+            'contact' => 'nullable|string|max:20',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ],[
             'name.required' => 'Name is required',
         ]);
@@ -41,22 +43,24 @@ class UserController extends Controller
             'profile_picture' => $profilePicturePath,
         ]);
 
-        // Return JSON response with id and other details for JS
+        // ✅ Send notification to all users
+        $allUsers = User::all(); // or filter only admins if needed
+        Notification::send($allUsers, new NewUserRegistered($user));
+
+        // Return JSON response with id and other details
         return response()->json([
             'success' => true,
             'message' => 'User created successfully',
             'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'contact' => $user->contact,
-            'profile_picture_url' => asset('storage/' . $user->profile_picture),
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'contact' => $user->contact,
+                'profile_picture_url' => $profilePicturePath ? asset('storage/' . $user->profile_picture) : null,
             ]
         ]);
-
     }
 
-    // Show edit form
     public function edit($id)
     {
         $user = User::findOrFail($id);
@@ -84,7 +88,6 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'User updated successfully!');
     }
 
-        
     public function destroy(User $user)
     {
         try {
@@ -94,6 +97,4 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'Failed to delete user: ' . $e->getMessage());
         }
     }
-
-
 }
