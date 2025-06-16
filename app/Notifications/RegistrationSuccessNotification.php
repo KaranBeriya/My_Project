@@ -32,13 +32,10 @@ class RegistrationSuccessNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Registration Successful')
-            ->greeting('Hello ' . $this->user->name . ',')
-            ->line('You have registered successfully!')
-            ->line('Details:')
-            ->line('Name: ' . $this->user->name)
-            ->line('Email: ' . $this->user->email)
-            ->line('Contact: ' . $this->user->contact)
-            ->line('Thank you for joining us!');
+            ->subject('🎉 Registration Successful')
+            ->view('emails.registration_success', [
+                'user' => $this->user
+            ]);
     }
+
 }
