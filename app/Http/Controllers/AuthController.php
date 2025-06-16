@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
 use App\Notifications\NewUserRegistered;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\WelcomeUser;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -57,16 +55,13 @@ class AuthController extends Controller
         $allUsers = User::where('id', '!=', $user->id)->get();
         Notification::send($allUsers, new NewUserRegistered($user));
 
-        // ✅ Trigger email verification
+        // ✅ Trigger email verification (CustomVerifyEmail will be used automatically)
         event(new Registered($user));
-
-        // ✅ Send welcome email with verification link
-        Mail::to($user->email)->send(new WelcomeUser($user));
 
         return response()->json([
             'success' => true,
             'message' => 'Registered successfully. Please verify your email before login.',
-            'redirect_url' => route('dashboard')
+            'redirect_url' => route('dashboard'),
         ]);
     }
 

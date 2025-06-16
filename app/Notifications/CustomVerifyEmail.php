@@ -14,11 +14,14 @@ class CustomVerifyEmail extends BaseVerifyEmail
         $verificationUrl = $this->verificationUrl($notifiable);
 
         return (new MailMessage)
-            ->subject('Verify Your Email')
+            ->subject('Welcome to Our App - Verify Your Email')
             ->view('emails.welcome', [
                 'user' => $notifiable,
                 'verificationUrl' => $verificationUrl,
             ]);
+            // ->withSwiftMessage(function ($message) {
+            //     $message->getHeaders()->addTextHeader('Content-Type', 'text/html');
+            // });
     }
 
     protected function verificationUrl($notifiable)
