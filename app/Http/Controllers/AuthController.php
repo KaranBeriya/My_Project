@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
+use App\Notifications\NewUserRegistered;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeUser;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -41,18 +44,24 @@ class AuthController extends Controller
         }
 
         $data = $request->only('name', 'email', 'contact', 'password');
-        $data['password'] = bcrypt($data['password']); // Secure password
+        $data['password'] = Hash::make($data['password']);
 
         if ($request->hasFile('profile_picture')) {
             $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
         }
 
+        // ✅ Create the user
         $user = User::create($data);
 
-        // Fire email verification event
+        // ✅ Notify all other users (except the newly registered one)
+        $allUsers = User::where('id', '!=', $user->id)->get();
+        Notification::send($allUsers, new NewUserRegistered($user));
+
+        // ✅ Trigger email verification
         event(new Registered($user));
 
-        Auth::login($user);
+        // ✅ Send welcome email with verification link
+        Mail::to($user->email)->send(new WelcomeUser($user));
 
         return response()->json([
             'success' => true,
@@ -64,22 +73,16 @@ class AuthController extends Controller
     // Handle Login
     public function store(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
-
         $credentials = $request->only('email', 'password');
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // Check if email is verified
             if (is_null($user->email_verified_at)) {
                 Auth::logout();
 
                 return back()->withErrors([
-                    'email' => 'Your email address is not verified. Please verify your email before logging in.',
+                    'email' => 'Your email address is not verified. Please check your inbox.',
                 ])->withInput();
             }
 
@@ -88,7 +91,7 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'Invalid credentials.',
+            'email' => 'Invalid credentials.'
         ])->withInput();
     }
 
@@ -96,14 +99,13 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect()->route('dashboard');
     }
 
-    // Show Forgot Password Page
+    // Forgot Password Form
     public function requestForm()
     {
         return view('auth.forgot-password');
@@ -116,16 +118,14 @@ class AuthController extends Controller
             'email' => 'required|email|exists:users,email',
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::RESET_LINK_SENT
             ? back()->with(['status' => __($status)])
             : back()->withErrors(['email' => __($status)]);
     }
 
-    // Show Reset Form
+    // Show Reset Password Form
     public function showResetForm(Request $request, $token)
     {
         return view('auth.reset-password', [
