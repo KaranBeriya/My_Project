@@ -95,8 +95,8 @@ return [
     'registration_success' => 'Registration successful! Please verify your email.',
     'registration_failed' => 'Something went wrong during registration.',
     'login_success' => 'Login successful!',
-    
-    
+    'forgot_password' => 'Forgot Password?',
+    'submit' => 'Login',
 
     // Forgot Password (repeated in Spanish, remove from here or move to `es/messages.php`)
     // Move the lines below to the `resources/lang/es/messages.php` file

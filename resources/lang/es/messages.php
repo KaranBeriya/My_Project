@@ -97,5 +97,7 @@ return [
     'registration_success' => 'Registration successful! Please verify your email.',
     'registration_failed' => 'Something went wrong during registration.',
     'login_success' => 'Login successful!',
+    'forgot_password' => '¿Olvidaste tu contraseña?',
+    'submit' => 'Iniciar sesión',
 
 ];
