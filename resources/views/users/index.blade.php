@@ -11,7 +11,7 @@
             <i class="fas fa-user-plus"></i>
             <span style="font-weight: bold; font-size: 18px;">{{ count($users) }}</span>
         </div>
-        <h4 style="font-size: 20px; margin: 0 0 10px 0;">Register User</h4>
+        <h4 style="font-size: 20px; margin: 0 0 10px 0;">{{ __('messages.register_user') }}</h4>
         <p id="toggleUserList"
             style="font-weight: 600; color: #b28900; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; font-size: 16px;">
             More Information
@@ -29,7 +29,7 @@
             <i class="fas fa-user-edit"></i>
             <span style="font-weight: bold; font-size: 18px;">Create</span>
         </div>
-        <h4 style="font-size: 20px; margin: 0 0 10px 0;">Create User</h4>
+        <h4 style="font-size: 20px; margin: 0 0 10px 0;">{{ __('messages.create_user') }}</h4>
         <p
             style="font-weight: 600; color: #0d47a1; display: inline-flex; align-items: center; gap: 10px; font-size: 16px;">
             Click to open form

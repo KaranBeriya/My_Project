@@ -49,7 +49,7 @@
 
 <div class="container mt-5">
     <div class="card p-4 mx-auto shadow" style="max-width: 400px;">
-        <h4 class="mb-3 text-center">🔁 Reset Password</h4>
+        <h4 class="mb-3 text-center">🔁 {{ __('Reset Password') }}</h4>
 
         <form method="POST" action="{{ route('password.update') }}">
             @csrf
@@ -59,7 +59,7 @@
 
             <!-- New Password -->
             <div class="form-group mb-3">
-                <label for="password">New Password</label>
+                <label for="password">{{ __('New Password') }}</label>
                 <div class="input-group">
                     <input type="password" name="password" id="password" class="form-control" required>
                     <span class="toggle-password" data-toggle="password">
@@ -73,7 +73,7 @@
 
             <!-- Confirm Password -->
             <div class="form-group mb-3">
-                <label for="password_confirmation">Confirm Password</label>
+                <label for="password_confirmation">{{ __('Confirm Password') }}</label>
                 <div class="input-group">
                     <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required>
                     <span class="toggle-password" data-toggle="password_confirmation">
@@ -82,7 +82,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-darkgreen w-100">Reset Password</button>
+            <button type="submit" class="btn btn-darkgreen w-100">{{ __('Reset Password') }}</button>
         </form>
     </div>
 </div>

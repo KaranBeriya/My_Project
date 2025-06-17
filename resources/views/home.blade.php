@@ -1,15 +1,15 @@
 @extends('layouts.public')
 
-@section('title', 'Dashboard')
+@section('title', __('messages.dashboard_title'))
 
 @section('content')
 <div class="container mt-5 text-center">
-    <h1 class="mb-4" style="color: black;">Welcome to Dashboard</h1>
+    <h1 class="mb-4" style="color: black;">{{ __('messages.dashboard_title') }}</h1>
     <p class="mb-4" style="color: black; font-size: 1.2rem;">
-        Manage your app efficiently.
+        {{ __('messages.dashboard_lead') }}
     </p>
     <p style="color: black; font-size: 1rem; font-style: italic;">
-        Empower your workflow with real-time insights and seamless control.
+        {{ __('messages.dashboard_subtext') }}
     </p>
 </div>
 @endsection

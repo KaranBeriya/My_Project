@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8" />
     <title>@yield('title', 'MyApp')</title>
@@ -68,7 +68,6 @@
             object-fit: cover;
             border: 2px solid #28a745;
             margin-bottom: 0.5rem;
-            transition: all 0.3s ease;
         }
 
         #sidebar.collapsed .user-profile img {
@@ -97,11 +96,10 @@
         }
 
         .nav-link i {
-            font-size: 1.2rem !important;
-            color:rgb(127, 192, 137);
+            font-size: 1.2rem;
+            color: rgb(127, 192, 137);
             width: 28px;
             text-align: center;
-            transition: color 0.3s ease, transform 0.3s ease;
         }
 
         .nav-link:hover i {
@@ -113,13 +111,8 @@
             display: none;
         }
 
-        #sidebar.collapsed .nav-link i {
-            display: inline-block;
-        }
-
         .nav-link.active,
         .nav-link:hover {
-            /* background-color: #1f1f1f; */
             color: #9df0aa;
             border-radius: 5px;
         }
@@ -131,8 +124,6 @@
 
         .logout-btn {
             width: 100%;
-            text-align: center;
-            justify-content: center;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -143,7 +134,6 @@
             border-radius: 5px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s ease;
         }
 
         .logout-btn:hover {
@@ -152,9 +142,8 @@
         }
 
         .logout-btn i {
-            font-size: 1.2rem !important;
+            font-size: 1.2rem;
             color: #9df0aa;
-            transition: color 0.3s ease, transform 0.3s ease;
         }
 
         .logout-btn:hover i {
@@ -164,10 +153,6 @@
 
         #sidebar.collapsed .logout-btn span {
             display: none;
-        }
-
-        #sidebar.collapsed .logout-btn i {
-            display: inline-block;
         }
 
         #sidebar.collapsed .nav-link,
@@ -192,12 +177,6 @@
             background-color: #e3f2fd !important;
         }
 
-        nav.navbar .navbar-brand,
-        nav.navbar .nav-link,
-        nav.navbar .btn {
-            color: black !important;
-        }
-
         .content {
             flex: 1;
             padding: 20px;
@@ -215,20 +194,8 @@
             font-weight: 500;
         }
 
-        .nav-link.btn-lightgreen:focus {
-            background-color: #c3e6cb;
-            border-color: #b1dfbb;
-            color: #0b2e13;
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
-        }
-
-        /* === Notification Bell Style === */
         .bell-icon::after {
-            display: none !important; /* removes default arrow */
-        }
-
-        .bell-icon i {
-            transition: transform 0.2s ease-in-out;
+            display: none !important;
         }
 
         .bell-icon:hover i {
@@ -239,98 +206,105 @@
 </head>
 <body>
 
-    <div id="sidebar">
-        <h3 class="sidebar-title">
-            <i class="fas fa-fire"></i> <span>MyApp</span>
-        </h3>
+<div id="sidebar">
+    <h3 class="sidebar-title">
+        <i class="fas fa-fire"></i> <span>MyApp</span>
+    </h3>
 
-        <div class="user-profile">
-            <img src="{{ Auth::user()->profile_picture 
-                        ? asset('storage/' . Auth::user()->profile_picture) 
-                        : asset('default-avatar.png') }}" 
-                alt="Profile Picture" />
-            <h5>{{ Auth::user()->name ?? 'User' }}</h5>
-            <small>{{ ucfirst(Auth::user()->role ?? 'Role') }}</small>
+    <div class="user-profile">
+        <img src="{{ Auth::user()->profile_picture 
+                    ? asset('storage/' . Auth::user()->profile_picture) 
+                    : asset('default-avatar.png') }}" 
+             alt="Profile Picture" />
+        <h5>{{ Auth::user()->name ?? 'User' }}</h5>
+        <small>{{ ucfirst(Auth::user()->role ?? 'Role') }}</small>
+    </div>
+
+    <nav class="nav flex-column px-2">
+        <a href="{{ url('/home') }}" class="nav-link {{ request()->is('home') ? 'active' : '' }}">
+            <i class="fas fa-tachometer-alt"></i> <span>{{ __('messages.dashboard') }}</span>
+        </a>
+        <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index') ? 'active' : '' }}">
+            <i class="fas fa-users"></i> <span>{{ __('messages.users') }}</span>
+        </a>
+    </nav>
+
+    <div class="logout-container">
+        <form id="logout-form" method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="btn logout-btn">
+                <i class="fas fa-sign-out-alt"></i> <span>{{ __('messages.logout') }}</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="main-content">
+    <nav class="navbar navbar-expand-lg px-4">
+        <span id="toggleSidebar" class="me-3" style="font-size: 1.5rem; cursor: pointer;">☰</span>
+        <a class="navbar-brand me-auto" href="#">{{ __('messages.welcome') }}, {{ Auth::user()->name ?? 'User' }}</a>
+
+        <!-- 🔔 Notifications -->
+        @php $unreadNotifications = Auth::user()->unreadNotifications; @endphp
+        <div class="position-relative dropdown me-3">
+            <a class="nav-link position-relative bell-icon" href="#" role="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-bell fa-lg" style="padding-left:20px"></i>
+                @if($unreadNotifications->count())
+                    <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+                          style="font-size: 0.7rem; padding: 0.3em 0.45em;">
+                        {{ $unreadNotifications->count() }}
+                    </span>
+                @endif
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notifDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                @forelse($unreadNotifications as $notification)
+                    <li class="dropdown-item small text-dark">
+                        {{ $notification->data['message'] ?? __('messages.new_notification') }}
+                        <form action="{{ route('notifications.markAsRead', $notification->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button class="btn btn-sm btn-link text-primary p-0">{{ __('messages.mark_as_read') }}</button>
+                        </form>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                @empty
+                    <li class="dropdown-item text-muted">{{ __('messages.no_notifications') }}</li>
+                @endforelse
+            </ul>
         </div>
 
-        <nav class="nav flex-column px-2">
-            <a href="{{ url('/home') }}" 
-               class="nav-link btn-lightgreen {{ request()->is('/home') ? 'active' : '' }}">
-                <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
-            </a>
-
-            <a href="{{ route('users.index') }}" 
-               class="nav-link btn-lightgreen {{ request()->routeIs('users.index') ? 'active' : '' }}">
-                <i class="fas fa-users"></i> <span>Users</span>
-            </a>
-        </nav>
-
-        <div class="logout-container">
-            <form id="logout-form" method="POST" action="{{ route('logout') }}">
+        <!-- 🌐 Language Switcher -->
+        <div class="d-flex align-items-center">
+            <form action="{{ route('language.switch') }}" method="POST" class="me-1">
                 @csrf
-                <button type="submit" class="btn logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
-                </button>
+                <input type="hidden" name="locale" value="en">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">EN</button>
+            </form>
+            <form action="{{ route('language.switch') }}" method="POST">
+                @csrf
+                <input type="hidden" name="locale" value="es">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">ES</button>
             </form>
         </div>
+    </nav>
+
+    <div class="content">
+        @yield('content')
     </div>
 
-    <div id="main-content">
-        <nav class="navbar navbar-expand-lg px-4">
-            <span id="toggleSidebar" class="me-3" style="font-size: 1.5rem; cursor: pointer;">☰</span>
-            <a class="navbar-brand me-auto" href="#">Welcome, {{ Auth::user()->name ?? 'User' }}</a>
+    <footer>
+        © {{ date('Y') }} MyApp — {{ __('messages.footer') }}
+    </footer>
+</div>
 
-            <!-- 🔔 Notification Bell -->
-            @php
-                $unreadNotifications = Auth::user()->unreadNotifications;
-            @endphp
-            <div class="position-relative dropdown me-3">
-                <a class="nav-link position-relative bell-icon" href="#" role="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-bell fa-lg" style="padding-left:20px"></i>
-                    @if($unreadNotifications->count())
-                        <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
-                              style="font-size: 0.7rem; padding: 0.3em 0.45em;">
-                            {{ $unreadNotifications->count() }}
-                        </span>
-                    @endif
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notifDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
-                    @forelse($unreadNotifications as $notification)
-                        <li class="dropdown-item small text-dark">
-                            {{ $notification->data['message'] ?? 'New Notification' }}
-                            <form action="{{ route('notifications.markAsRead', $notification->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button class="btn btn-sm btn-link text-primary p-0">Mark as read</button>
-                            </form>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                    @empty
-                        <li class="dropdown-item text-muted">No new notifications</li>
-                    @endforelse
-                </ul>
-            </div>
-        </nav>
-
-        <div class="content">
-            @yield('content')
-        </div>
-
-        <footer>
-            © {{ date('Y') }} MyApp — Empowering Your Admin Experience.
-        </footer>
-    </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#toggleSidebar').on('click', function () {
-                $('#sidebar').toggleClass('collapsed');
-                $('#main-content').toggleClass('collapsed');
-            });
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#toggleSidebar').on('click', function () {
+            $('#sidebar').toggleClass('collapsed');
+            $('#main-content').toggleClass('collapsed');
         });
-    </script>
-    @stack('script')
-
+    });
+</script>
+@stack('script')
 </body>
 </html>

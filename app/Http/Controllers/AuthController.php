@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\App;
 use App\Notifications\NewUserRegistered;
 use App\Notifications\RegistrationSuccessNotification;
 
@@ -27,7 +28,7 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    // Handle Registration
+    // Handle Registration (AJAX-friendly with param-based errors)
     public function register(Request $request)
     {
         try {
@@ -54,33 +55,41 @@ class AuthController extends Controller
 
             // Notify all other users
             $otherUsers = User::where('id', '!=', $user->id)->get();
-            Notification::send($otherUsers, new \App\Notifications\NewUserRegistered($user));
+            Notification::send($otherUsers, new NewUserRegistered($user));
 
-            // Notify the user with success email
-            $user->notify(new \App\Notifications\RegistrationSuccessNotification($user));
+            // Notify registered user
+            $user->notify(new RegistrationSuccessNotification($user));
 
-            // Trigger verification
-            event(new \Illuminate\Auth\Events\Registered($user));
+            // Email verification
+            event(new Registered($user));
 
             return response()->json([
                 'success' => true,
-                'message' => 'Registered successfully. Please verify your email.',
+                'message' => __('messages.registration_success'),
+                'redirect_url' => route('login.page'),
             ]);
-
         } catch (\Exception $e) {
             \Log::error("Registration error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong, please try again.',
-                'error' => $e->getMessage(), // 🛠️ show in dev mode
+                'message' => __('messages.registration_failed'),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-
-    // Handle Login
+    // Handle Login (AJAX-friendly with param-based errors)
     public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $credentials = $request->only('email', 'password');
 
         if (Auth::attempt($credentials)) {
@@ -88,19 +97,23 @@ class AuthController extends Controller
 
             if (is_null($user->email_verified_at)) {
                 Auth::logout();
-
-                return back()->withErrors([
-                    'email' => 'Your email address is not verified. Please check your inbox.',
-                ])->withInput();
+                return response()->json([
+                    'errors' => ['email' => [__('messages.email_not_verified')]],
+                ], 403);
             }
 
             $request->session()->regenerate();
-            return redirect()->intended(route('home'));
+
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.login_success'),
+                'redirect_url' => route('home'),
+            ]);
         }
 
-        return back()->withErrors([
-            'email' => 'Invalid credentials.'
-        ])->withInput();
+        return response()->json([
+            'errors' => ['email' => [__('messages.invalid_credentials')]],
+        ], 401);
     }
 
     // Logout
@@ -109,7 +122,6 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
         return redirect()->route('dashboard');
     }
 
@@ -163,5 +175,20 @@ class AuthController extends Controller
         return $status === Password::PASSWORD_RESET
             ? redirect()->route('login.page')->with('status', __($status))
             : back()->withErrors(['email' => [__($status)]]);
+    }
+
+    // Language Switcher
+    public function switch(Request $request)
+    {
+        $locale = $request->input('locale');
+
+        if (!in_array($locale, ['en', 'es'])) {
+            abort(400, 'Invalid locale');
+        }
+
+        session(['locale' => $locale]);
+        App::setLocale($locale);
+
+        return redirect()->back();
     }
 }
