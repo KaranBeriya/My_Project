@@ -45,6 +45,14 @@
 <div id="createUserFormContainer"
     style="margin: 20px auto; background: #e3f2fd; padding: 15px; border-radius: 8px; display: none; max-width: 400px;">
     
+    <!-- Loader -->
+    <div id="loader" style="display: none; text-align: center; margin-bottom: 10px;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p>Submitting, please wait...</p>
+    </div>
+
     <!-- Session Alerts -->
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -142,7 +150,6 @@
                             <i class="fas fa-trash"></i>
                         </button>
                     </form>
-
                 </td>
                 @endif
             </tr>
@@ -159,6 +166,7 @@
     const createUserFormContainer = document.getElementById('createUserFormContainer');
     const toggleUserListBtn = document.getElementById('toggleUserList');
     const createUserBox = document.getElementById('createUserBox');
+    const loader = document.getElementById('loader');
 
     window.addEventListener('load', () => {
         usersList.style.display = 'none';
@@ -189,23 +197,34 @@
     createUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(createUserForm);
-        const response = await fetch(createUserForm.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        loader.style.display = 'block'; // Show loader
+        document.getElementById('formMessage').innerText = '';
+        clearErrors();
+
+        try {
+            const response = await fetch(createUserForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+
+            const data = await response.json();
+            loader.style.display = 'none'; // Hide loader
+
+            if (data.success) {
+                document.getElementById('formMessage').innerText = 'User created successfully!';
+                createUserForm.reset();
+                location.reload();
+            } else if (data.errors) {
+                showErrors(data.errors);
+            } else {
+                document.getElementById('formMessage').innerText = 'An error occurred.';
             }
-        });
-        const data = await response.json();
-        if (data.success) {
-            document.getElementById('formMessage').innerText = 'User created successfully!';
-            createUserForm.reset();
-            clearErrors();
-            location.reload();
-        } else if (data.errors) {
-            showErrors(data.errors);
-        } else {
-            document.getElementById('formMessage').innerText = 'An error occurred.';
+        } catch (error) {
+            loader.style.display = 'none';
+            document.getElementById('formMessage').innerText = 'Submission failed. Try again.';
         }
     });
 
@@ -214,7 +233,6 @@
     }
 
     function showErrors(errors) {
-        clearErrors();
         for (const [key, messages] of Object.entries(errors)) {
             const el = document.getElementById(`error-${key}`);
             if (el) el.innerText = messages.join(', ');

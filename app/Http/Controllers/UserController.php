@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewUserRegistered;
 use App\Notifications\RegistrationSuccessNotification;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Auth\Events\Registered;
 
 class UserController extends Controller
 {
@@ -39,10 +41,13 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
+            'password' => Hash::make($validated['password']),
             'contact' => $validated['contact'] ?? null,
             'profile_picture' => $profilePicturePath,
         ]);
+
+        // ✅ Send email verification
+        event(new Registered($user));
 
         // ✅ Notify all other users
         $otherUsers = User::where('id', '!=', $user->id)->get();
@@ -54,7 +59,7 @@ class UserController extends Controller
         // ✅ Return JSON response with user info
         return response()->json([
             'success' => true,
-            'message' => 'User created successfully',
+            'message' => 'User created successfully. Verification email sent.',
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
