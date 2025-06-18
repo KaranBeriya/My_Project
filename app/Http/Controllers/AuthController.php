@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Auth\Events\Registered;
-use App\Notifications\NewUserRegistered;
+use App\Notifications\UserRegisteredNotification;
 use App\Notifications\RegistrationSuccessNotification;
 
 class AuthController extends Controller
@@ -40,27 +40,26 @@ class AuthController extends Controller
         ]);
     }
 
-    /* -------------------- Registration -------------------- */
+    /* -------------------- Registration (AJAX) -------------------- */
 
     public function register(Request $request)
     {
         try {
-            // Validate input
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'contact' => 'nullable|string|max:20',
                 'password' => 'required|string|min:6|confirmed',
-                'profile_picture' => 'nullable|image|max:5120',
+                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            // Prepare data
-            $data = $request->only('name', 'email', 'contact', 'password');
-            $data['password'] = bcrypt($data['password']);
+            // Prepare user data
+            $data = $request->only('name', 'email', 'contact');
+            $data['password'] = Hash::make($request->password);
 
             if ($request->hasFile('profile_picture')) {
                 $data['profile_picture'] = $request->file('profile_picture')->store('profiles', 'public');
@@ -69,26 +68,26 @@ class AuthController extends Controller
             // Create user
             $user = User::create($data);
 
-            // Notify other users
-            $otherUsers = User::where('id', '!=', $user->id)->get();
-            Notification::send($otherUsers, new NewUserRegistered($user));
-
-            // Notify the registered user
-            $user->notify(new RegistrationSuccessNotification($user));
-
             // Send email verification
             event(new Registered($user));
+
+            // Notify all other users
+            $otherUsers = User::where('id', '!=', $user->id)->get();
+            Notification::send($otherUsers, new UserRegisteredNotification($user));
+
+            // Notify new user
+            $user->notify(new RegistrationSuccessNotification($user));
 
             return response()->json([
                 'success' => true,
                 'message' => 'Registered successfully. Please verify your email.',
             ]);
         } catch (\Exception $e) {
-            \Log::error("Registration error: " . $e->getMessage());
+            \Log::error("Registration Error: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Something went wrong, please try again.',
-                'error' => $e->getMessage(),
+                'message' => 'Something went wrong during registration.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -102,15 +101,14 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // Email not verified
+            // Check email verification
             if (is_null($user->email_verified_at)) {
                 Auth::logout();
                 return back()->withErrors([
-                    'email' => 'Your email address is not verified. Please check your inbox.',
+                    'email' => 'Your email is not verified. Please check your inbox.',
                 ])->withInput();
             }
 
-            // Success
             $request->session()->regenerate();
             return redirect()->intended(route('home'));
         }
@@ -131,7 +129,7 @@ class AuthController extends Controller
         return redirect()->route('dashboard');
     }
 
-    /* -------------------- Forgot/Reset Password -------------------- */
+    /* -------------------- Forgot Password -------------------- */
 
     public function sendResetLink(Request $request)
     {
@@ -145,6 +143,8 @@ class AuthController extends Controller
             ? back()->with(['status' => __($status)])
             : back()->withErrors(['email' => __($status)]);
     }
+
+    /* -------------------- Reset Password -------------------- */
 
     public function resetPassword(Request $request)
     {
@@ -182,5 +182,18 @@ class AuthController extends Controller
         app()->setLocale($locale);
 
         return redirect()->back();
+    }
+
+    /* -------------------- Mark Notification As Read -------------------- */
+
+    public function markAsRead($id)
+    {
+        $notification = auth()->user()->notifications()->where('id', $id)->first();
+
+        if ($notification) {
+            $notification->markAsRead();
+        }
+
+        return back();
     }
 }
