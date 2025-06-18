@@ -10,6 +10,9 @@ use App\Models\User;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Mail\WelcomeUser;
+use App\Notifications\RegistrationSuccessNotification;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Session;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,6 +92,26 @@ Route::middleware('auth')->group(function () {
         return back();
     })->name('notifications.markAll');
 });
+Route::get('lang/{locale}', function ($locale) {
+    if (in_array($locale, ['en', 'es'])) {
+        session(['locale' => $locale]);
+    }
+    return redirect()->back();
+})->name('lang.switch');
+
+Route::get('language/{locale}', [AuthController::class, 'switch'])->name('language.switch');
+Route::post('language', [AuthController::class, 'switch'])->name('language.switch');
+
+Route::get('/language/{locale}', function ($locale) {
+    if (!in_array($locale, ['en', 'es'])) {
+        abort(400); // invalid locale
+    }
+
+    Session::put('locale', $locale);
+    App::setLocale($locale);
+
+    return redirect()->back();
+})->name('language.switch');
 
 /*
 |--------------------------------------------------------------------------
@@ -128,6 +151,11 @@ Route::get('/test-mail', function () {
         $message->to('karanberiya9@gmail.com')->subject('Laravel Test Email');
     });
     return 'Mail sent!';
+});
+
+Route::get('/preview-registration-mail', function () {
+    $user = User::first(); // test user
+    return (new RegistrationSuccessNotification($user))->toMail($user);
 });
 
 // Optional force login for testing

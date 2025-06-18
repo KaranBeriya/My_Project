@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\NewUserRegistered;
+use App\Notifications\RegistrationSuccessNotification;
+use App\Notifications\UserRegisteredNotification;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -17,48 +21,68 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        // Validation rules
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'contact' => 'nullable|string|max:20',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
-        ],[
-            'name.required' => 'Name is required',
-        ]);
+        try {
+            // Validation
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|min:6',
+                'contact' => 'nullable|string|max:20',
+                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            ], [
+                'name.required' => 'Name is required',
+                'email.required' => 'Email is required',
+                'password.required' => 'Password is required',
+            ]);
 
-        // Handle profile picture upload
-        $profilePicturePath = null;
-        if ($request->hasFile('profile_picture')) {
-            $profilePicturePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+            // File upload
+            $profilePicturePath = null;
+            if ($request->hasFile('profile_picture')) {
+                $profilePicturePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+            }
+
+            // Create user
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'contact' => $validated['contact'] ?? null,
+                'profile_picture' => $profilePicturePath,
+            ]);
+
+            // Email verification
+            event(new Registered($user));
+
+            // Notify other users
+            $otherUsers = User::where('id', '!=', $user->id)->get();
+            Notification::send($otherUsers, new UserRegisteredNotification($user));
+
+            // Notify new user
+            $user->notify(new RegistrationSuccessNotification($user));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User created successfully. Verification email sent.',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'contact' => $user->contact,
+                    'profile_picture_url' => $profilePicturePath ? asset('storage/' . $user->profile_picture) : null,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('User store error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while creating the user.',
+            ], 500);
         }
-
-        // Create user
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'contact' => $validated['contact'] ?? null,
-            'profile_picture' => $profilePicturePath,
-        ]);
-
-        // ✅ Send notification to all users
-        $allUsers = User::all(); // or filter only admins if needed
-        Notification::send($allUsers, new NewUserRegistered($user));
-
-        // Return JSON response with id and other details
-        return response()->json([
-            'success' => true,
-            'message' => 'User created successfully',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'contact' => $user->contact,
-                'profile_picture_url' => $profilePicturePath ? asset('storage/' . $user->profile_picture) : null,
-            ]
-        ]);
     }
 
     public function edit($id)

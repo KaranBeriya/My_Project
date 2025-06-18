@@ -1,18 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Login')
+@section('title', __('messages.login'))
 
 @section('content')
 <div class="container d-flex justify-content-center align-items-center mt-5">
     <div class="card shadow p-4" style="max-width: 420px; width: 100%; border-radius: 0.75rem;">
-        <h4 class="mb-4 text-center">Login</h4>
+        <h4 class="mb-4 text-center">{{ __('messages.login') }}</h4>
 
         <form id="loginForm" method="POST" action="{{ route('login.store') }}">
             @csrf
-            <input name="email" type="email" placeholder="Email" class="form-control mb-2" required><br>
+
+            <input name="email" type="email" placeholder="{{ __('messages.email') }}" class="form-control mb-2" required><br>
 
             <div class="position-relative mb-2">
-                <input id="passwordField" name="password" type="password" placeholder="Password" class="form-control pe-5" required>
+                <input id="passwordField" name="password" type="password" placeholder="{{ __('messages.password') }}" class="form-control pe-5" required>
                 <button type="button" tabindex="-1" class="btn toggle-password position-absolute end-0 top-0 h-100 px-3 border-0 bg-transparent">
                     <i class="bi bi-eye-slash" id="toggleIcon"></i>
                 </button>
@@ -21,11 +22,11 @@
             <!-- Forgot Password Link -->
             <div class="text-end mb-3">
                 <a href="{{ route('password.request') }}" class="text-decoration-none text-sm" style="font-size: 0.85rem;">
-                    Forgot Password?
+                    {{ __('messages.forgot_password') }}
                 </a>
             </div>
 
-            <button type="submit" class="btn btn-darkgreen w-100">Login</button>
+            <button type="submit" class="btn btn-darkgreen w-100">{{ __('messages.login') }}</button>
         </form>
 
         @if ($errors->any())
