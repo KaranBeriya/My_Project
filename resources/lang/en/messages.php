@@ -31,19 +31,22 @@ return [
     'dashboard_heading' => 'Welcome to the Dashboard',
     'dashboard_lead' => 'This is a public page with footer and navbar only.',
     'dashboard_subtext' => 'Empower your workflow with real-time insights and seamless control.',
+    'dashboard_title' => 'Welcome to Your Dashboard',
 
     // User Management
     'users' => 'Users',
+    'users_list' => 'Users List',
     'register_user' => 'Registered Users',
     'create_user' => 'Create User',
     'edit_user' => 'Edit User',
     'update_user' => 'Update User',
     'create_new_user' => 'Create New User',
-    'more_info' => 'More Information',
-    'click_to_open' => 'Click to open form',
+    'more_info' => 'More Info',
+    'click_to_open' => 'Click to open',
     'confirm_delete' => 'Are you sure you want to delete this user?',
     'user_created' => 'User created successfully!',
     'user_created_success' => 'User created successfully. Verification email sent.',
+    'user_created_successfully' => 'User created successfully!',
     'user_updated_success' => 'User updated successfully!',
     'user_deleted_success' => 'User deleted successfully.',
     'user_delete_failed' => 'Failed to delete user',
@@ -53,7 +56,7 @@ return [
     // Form Fields
     'name' => 'Name',
     'role' => 'Role',
-    'select_role' => '-- Select Role --',
+    'select_role' => 'Select Role',
     'user' => 'User',
     'admin' => 'Admin',
     'email' => 'Email',
@@ -77,8 +80,12 @@ return [
     // General
     'something_went_wrong' => 'Something went wrong, please try again.',
     'error_occurred' => 'An error occurred.',
-    'submission_failed' => 'Submission failed. Try again.',
+    'an_error_occurred' => 'An error occurred!',
+    'submission_failed' => 'Submission failed!',
     'submitting' => 'Submitting, please wait...',
+    'submitting_please_wait' => 'Submitting, please wait...',
+    'loading' => 'Loading...',
+    'create' => 'Create',
 
     // Layout
     'logout' => 'Logout',

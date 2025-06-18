@@ -24,6 +24,7 @@ return [
     'user_deleted_success' => 'Usuario eliminado con éxito.',
     'user_delete_failed' => 'Error al eliminar el usuario.',
     'user_created' => '¡Usuario creado con éxito!',
+    'user_created_successfully' => '¡Usuario creado con éxito!',
     'registered_users' => 'Usuarios registrados',
     'create_new_user' => 'Crear nuevo usuario',
     'edit_user' => 'Editar usuario',
@@ -32,6 +33,7 @@ return [
     'register_user' => 'Usuario registrado',
     'click_to_open' => 'Haga clic para abrir el formulario',
     'submitting' => 'Enviando, por favor espera...',
+    'submitting_please_wait' => 'Enviando, por favor espera...',
     'more_info' => 'Más información',
     'confirm_delete' => '¿Está seguro de que desea eliminar este usuario?',
 
@@ -78,6 +80,7 @@ return [
 
     // Navegación
     'users' => 'Usuarios',
+    'users_list' => 'Lista de usuarios',
     'logout' => 'Cerrar sesión',
     'welcome' => 'Bienvenido',
     'no_notifications' => 'No hay nuevas notificaciones',
@@ -87,4 +90,11 @@ return [
     // Idiomas
     'english' => 'Inglés',
     'spanish' => 'Español',
+
+    // Otros (traducciones extra de inglés)
+    'create' => 'Crear',
+    'loading' => 'Cargando...',
+    'an_error_occurred' => '¡Ocurrió un error!',
+    'submission_failed' => '¡Error al enviar!',
+
 ];
