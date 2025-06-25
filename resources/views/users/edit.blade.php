@@ -17,8 +17,9 @@
         <div class="mb-3">
             <label for="role" class="form-label fw-semibold">{{ __('messages.role') }}</label>
             <select name="role" class="form-select" required>
-                <option value="user" {{ $user->role === 'user' ? 'selected' : '' }}>{{ __('messages.user') }}</option>
-                <option value="admin" {{ $user->role === 'admin' ? 'selected' : '' }}>{{ __('messages.admin') }}</option>
+                <option value="user" {{ strtolower($user->role) === 'user' ? 'selected' : '' }}>{{ __('messages.user') }}</option>
+                <option value="admin" {{ strtolower($user->role) === 'admin' ? 'selected' : '' }}>{{ __('messages.admin') }}</option>
+                
             </select>
         </div>
 

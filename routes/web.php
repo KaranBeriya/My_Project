@@ -184,3 +184,11 @@ Route::get('/cache/clear/users', function () {
 */
 Route::get('/users', fn() => redirect()->route('users.index'));
 Route::get('/home', fn() => redirect()->route('home'));
+
+Route::post('/language-switch', function (\Illuminate\Http\Request $request) {
+    $locale = $request->input('locale');
+    if (in_array($locale, ['en', 'es'])) {
+        Session::put('locale', $locale);
+    }
+    return redirect()->back();
+})->name('language.switch');
