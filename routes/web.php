@@ -6,13 +6,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\App;
 use App\Models\User;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Mail\WelcomeUser;
 use App\Notifications\RegistrationSuccessNotification;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Session;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,35 +40,24 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 | Email Verification Routes
 |--------------------------------------------------------------------------
 */
-// Preview welcome email
-Route::get('/preview-email', function () {
-    $user = User::latest()->first();
-    return new WelcomeUser($user);
-});
+Route::get('/email/verify', fn() => view('auth.verify-email'))->middleware('auth')->name('verification.notice');
 
-// Show verify email prompt
-Route::get('/email/verify', fn() => view('auth.verify-email'))
-    ->middleware('auth')
-    ->name('verification.notice');
-
-// Handle email verification link
 Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
     $user = User::findOrFail($id);
 
-    if (! URL::hasValidSignature($request)) {
+    if (!URL::hasValidSignature($request)) {
         abort(403, 'Invalid or expired verification link.');
     }
 
-    if (! $user->hasVerifiedEmail()) {
+    if (!$user->hasVerifiedEmail()) {
         $user->markEmailAsVerified();
         event(new Verified($user));
     }
 
-    Auth::login($user); // Optional: log in user after verification
+    Auth::login($user);
     return redirect('/dashboard')->with('message', 'Email verified successfully!');
 })->name('verification.verify');
 
-// Resend email verification
 Route::post('/email/verification-notification', function (Request $request) {
     $request->user()->sendEmailVerificationNotification();
     return back()->with('message', 'Verification link sent!');
@@ -79,19 +69,23 @@ Route::post('/email/verification-notification', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    // Mark one as read
     Route::post('/notifications/{id}/read', function ($id) {
         $notification = Auth::user()->notifications()->findOrFail($id);
         $notification->markAsRead();
         return back();
     })->name('notifications.markAsRead');
 
-    // Mark all as read
     Route::post('/notifications/read-all', function () {
         Auth::user()->unreadNotifications->markAsRead();
         return back();
     })->name('notifications.markAll');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Language Switcher Routes
+|--------------------------------------------------------------------------
+*/
 Route::get('lang/{locale}', function ($locale) {
     if (in_array($locale, ['en', 'es'])) {
         session(['locale' => $locale]);
@@ -99,17 +93,11 @@ Route::get('lang/{locale}', function ($locale) {
     return redirect()->back();
 })->name('lang.switch');
 
-Route::get('language/{locale}', [AuthController::class, 'switch'])->name('language.switch');
-Route::post('language', [AuthController::class, 'switch'])->name('language.switch');
-
-Route::get('/language/{locale}', function ($locale) {
-    if (!in_array($locale, ['en', 'es'])) {
-        abort(400); // invalid locale
+Route::match(['get', 'post'], '/language/{locale?}', function ($locale = null) {
+    if ($locale && in_array($locale, ['en', 'es'])) {
+        Session::put('locale', $locale);
+        App::setLocale($locale);
     }
-
-    Session::put('locale', $locale);
-    App::setLocale($locale);
-
     return redirect()->back();
 })->name('language.switch');
 
@@ -131,19 +119,27 @@ Route::middleware('auth')->prefix('myapp')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Verified-Only Routes
+| Verified Dashboard
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'verified'])->get('/dashboard', fn() => view('dashboard'));
 
 /*
 |--------------------------------------------------------------------------
-| Shortcuts & Test Routes
+| Utility / Test / Cache Routes
 |--------------------------------------------------------------------------
 */
-// Redirects
-Route::get('/users', fn() => redirect()->route('users.index'));
-Route::get('/home', fn() => redirect()->route('home'));
+// Preview welcome email
+Route::get('/preview-email', function () {
+    $user = User::latest()->first();
+    return new WelcomeUser($user);
+});
+
+// Preview registration success notification mail
+Route::get('/preview-registration-mail', function () {
+    $user = User::first();
+    return (new RegistrationSuccessNotification($user))->toMail($user);
+});
 
 // Test SMTP Email
 Route::get('/test-mail', function () {
@@ -153,14 +149,38 @@ Route::get('/test-mail', function () {
     return 'Mail sent!';
 });
 
-Route::get('/preview-registration-mail', function () {
-    $user = User::first(); // test user
-    return (new RegistrationSuccessNotification($user))->toMail($user);
+// Cache testing routes
+Route::get('/test-cache', function () {
+    $data = Cache::remember('test_data', 1, function () {
+        return User::pluck('name');
+    });
+
+    return response()->json($data);
 });
 
-// Optional force login for testing
-// Route::get('/force-login', function () {
-//     $user = User::find(1);
-//     Auth::login($user);
-//     return '✅ Logged in as user ID: ' . $user->id;
-// });
+Route::get('/cache/users', function () {
+    $users = Cache::remember('all_users', 60, function () {
+        return User::all();
+    });
+    return response()->json($users);
+});
+
+Route::get('/cache/user/{id}', function ($id) {
+    $user = Cache::remember("user_{$id}", 60, function () use ($id) {
+        return User::findOrFail($id);
+    });
+    return response()->json($user);
+});
+
+Route::get('/cache/clear/users', function () {
+    Cache::forget('all_users');
+    return 'User cache cleared!';
+});
+
+/*
+|--------------------------------------------------------------------------
+| Redirection Shortcuts
+|--------------------------------------------------------------------------
+*/
+Route::get('/users', fn() => redirect()->route('users.index'));
+Route::get('/home', fn() => redirect()->route('home'));

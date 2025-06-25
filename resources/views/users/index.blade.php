@@ -106,6 +106,8 @@
 <!-- Users Table -->
 <div id="usersList" style="margin-top: 30px; display: none;">
     <h3>{{ __('messages.registered_users') }}</h3>
+        <!-- ✅ Add this line to show data source (Cache or Database) -->
+    <p><strong>Data Source:</strong> {{ $source }}</p>
     <table class="table table-striped">
         <thead>
             <tr>

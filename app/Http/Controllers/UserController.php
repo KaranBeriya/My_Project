@@ -10,13 +10,19 @@ use App\Notifications\UserRegisteredNotification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all(); // 🔁 get all users
-        return view('users.index', compact('users'));
+        $source = Cache::has('all_users') ? 'Cache' : 'Database';
+        $users = Cache::remember('all_users', now()->addHours(2), function () {
+            return User::all();
+        });
+
+
+        return view('users.index', compact('users', 'source'));
     }
 
     public function store(Request $request)
@@ -59,6 +65,9 @@ class UserController extends Controller
 
             // Notify new user
             $user->notify(new RegistrationSuccessNotification($user));
+
+            // Clear old user list cache
+            Cache::forget('all_users');
 
             return response()->json([
                 'success' => true,
@@ -109,6 +118,9 @@ class UserController extends Controller
 
         $user->update($validated);
 
+        // Clear cache after update
+        Cache::forget('all_users');
+
         return redirect()->route('users.index')->with('success', 'User updated successfully!');
     }
 
@@ -116,6 +128,10 @@ class UserController extends Controller
     {
         try {
             $user->delete();
+
+            // Clear cache after delete
+            Cache::forget('all_users');
+
             return redirect()->route('users.index')->with('success', 'User deleted successfully.');
         } catch (\Exception $e) {
             return redirect()->route('users.index')->with('error', 'Failed to delete user: ' . $e->getMessage());

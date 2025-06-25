@@ -95,4 +95,6 @@ return [
     'footer' => 'Empowering Your Admin Experience.',
     'english' => 'English',
     'spanish' => 'Español',
+
+    'registered_users' => 'Registered Users',
 ];
