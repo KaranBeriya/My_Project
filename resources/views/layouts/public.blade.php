@@ -227,6 +227,9 @@
         <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index') ? 'active' : '' }}">
             <i class="fas fa-users"></i> <span>{{ __('messages.users') }}</span>
         </a>
+        <a href="{{ route('users.datatable') }}" class="nav-link {{ request()->routeIs('users.datatable') ? 'active' : '' }}">
+            <i class="fas fa-list"></i> <span>User List</span>
+        </a>
     </nav>
 
     <div class="logout-container">

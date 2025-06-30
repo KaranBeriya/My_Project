@@ -8,7 +8,9 @@
     <div style="flex: 0 0 220px; background-color: #fff176; padding: 15px 20px; border-radius: 8px; box-sizing: border-box;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
             <i class="fas fa-user-plus"></i>
-            <span style="font-weight: bold; font-size: 18px;">{{ count($users) }}</span>
+            <span style="font-weight: bold; font-size: 18px;">
+                {{ count($users ?? []) }}
+            </span>
         </div>
         <h4 style="font-size: 20px; margin: 0 0 10px 0;">{{ __('messages.register_user') }}</h4>
         <p id="toggleUserList"
@@ -107,7 +109,7 @@
 <div id="usersList" style="margin-top: 30px; display: none;">
     <h3>{{ __('messages.registered_users') }}</h3>
         <!-- ✅ Add this line to show data source (Cache or Database) -->
-    <p><strong>Data Source:</strong> {{ $source }}</p>
+    <p><strong>Data Source:</strong> {{ $source ?? 'Unknown' }}</p>
     <table class="table table-striped">
         <thead>
             <tr>

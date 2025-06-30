@@ -110,6 +110,7 @@ Route::middleware('auth')->prefix('myapp')->group(function () {
     Route::view('/home', 'home')->name('home');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/datatable', [UserController::class, 'datatable'])->name('users.datatable');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
@@ -192,3 +193,7 @@ Route::post('/language-switch', function (\Illuminate\Http\Request $request) {
     }
     return redirect()->back();
 })->name('language.switch');
+
+// Route::get('/users/datatable-view', function () {
+//     return view('users.datatable');
+// });
