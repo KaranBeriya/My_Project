@@ -45,6 +45,7 @@
                 <tr>
                     <th style="width: 40px;">Id</th>
                     <th style="min-width: 120px;">Name</th>
+                    <th style="min-width: 120px;">Role</th>
                     <th style="min-width: 180px;">Email</th>
                     <th style="min-width: 150px;">Contact</th>
                     <th style="min-width: 120px;">Action</th>
@@ -68,13 +69,14 @@
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'name', name: 'name' },
+                { data: 'role', name: 'role' },
                 { data: 'email', name: 'email' },
                 { data: 'contact', name: 'contact' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
             pageLength: 10,
             lengthMenu: [10, 25, 50, 100],
-            dom: '<"d-flex justify-content-between align-items-center mb-2"lf>rt<"d-flex justify-content-between align-items-center mt-2"ip>'
+            // dom: '<"d-flex justify-content-between align-items-center mb-2"lf>rt<"d-flex justify-content-between align-items-center mt-2"ip>'
         });
     });
 </script>

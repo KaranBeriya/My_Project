@@ -31,30 +31,53 @@ class UserController extends Controller
     public function datatable(Request $request)
     {
         if ($request->ajax()) {
-            $data = User::query(); // ✅ Proper for server-side pagination
+            $data = User::query();
 
             return DataTables::of($data)
-                ->addIndexColumn() // ✅ For DT_RowIndex column
+                ->addIndexColumn()
+
+                // 👤 Name with icon
+                ->editColumn('name', function ($row) {
+                    return '<i class="bi bi-person-fill"></i> ' . e($row->name);
+                })
+
+                // 🧾 Role as plain text (no badge, no icon)
+                ->editColumn('role', function ($row) {
+                    return e(ucfirst($row->role)); // e.g., "Admin", "User"
+                })
+
+                // 📧 Email lowercase
+                ->editColumn('email', function ($row) {
+                    return strtolower($row->email);
+                })
+
+                // 📞 Contact with country code
+                ->editColumn('contact', function ($row) {
+                    return '+91-' . e($row->contact);
+                })
+
+                // 🛠️ Action buttons
                 ->addColumn('action', function ($row) {
-                    $btn = '<a href="' . route('users.edit', $row->id) . '" class="edit btn btn-primary btn-sm">Edit</a> ';
-                    $btn .= '<form action="' . route('users.destroy', $row->id) . '" method="POST" style="display:inline;">
+                    $editUrl = route('users.edit', $row->id);
+                    $deleteUrl = route('users.destroy', $row->id);
+                    
+                    $btn = '<a href="' . $editUrl . '" class="btn btn-sm btn-primary">Edit</a> ';
+                    $btn .= '<form action="' . $deleteUrl . '" method="POST" style="display:inline;">
                                 ' . csrf_field() . method_field('DELETE') . '
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Are you sure?\')">Delete</button>
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')">Delete</button>
                             </form>';
                     return $btn;
                 })
-                ->rawColumns(['action']) // ✅ allow HTML in "action"
-                ->make(true); // ✅ returns draw, recordsTotal, etc.
+
+                // Only allow HTML rendering where needed
+                ->rawColumns(['name', 'action']) // ❌ 'role' removed here
+
+                ->make(true);
         }
 
-        // Optional non-AJAX fallback view
-        $source = Cache::has('all_users') ? 'Cache' : 'Database';
-        $users = Cache::remember('all_users', now()->addHours(2), function () {
-            return User::get();
-        });
-
-        return view('users.datatable', compact('users', 'source'));
+        return view('users.datatable');
     }
+
 
     // Create user (AJAX)
     public function store(Request $request)
