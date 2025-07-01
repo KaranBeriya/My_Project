@@ -3,42 +3,28 @@
 @section('title', 'User List - DataTables')
 
 @push('style')
-<!-- DataTables CSS -->
-<link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <style>
-    .table {
-        font-size: 13px;
+    #users-table_wrapper .dataTables_paginate .paginate_button {
+        background-color: #f0f0f0 !important;
+        color: #007bff !important;
+        border: 1px solid #007bff !important;
+        border-radius: 4px !important;
+        padding: 4px 10px !important;
+        margin: 0 2px !important; 
+        cursor: pointer !important;
+        transition: all 0.3s ease-in-out !important;
     }
 
-    .btn-sm {
-        padding: 2px 8px;
-        font-size: 12px;
+    #users-table_wrapper .dataTables_paginate .paginate_button:hover {
+        background-color: #007bff !important;
+        color: white !important;
     }
 
-    #users-table_wrapper {
-        padding: 10px;
-    }
-
-    .dataTables_filter input,
-    .dataTables_length select {
-        height: 30px;
-        font-size: 13px;
-    }
-
-    .dataTables_wrapper .row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-
-    .dataTables_paginate .paginate_button {
-        padding: 3px 8px !important;
-        font-size: 12px;
-    }
-
-    .table-responsive {
-        overflow-x: auto;
+    #users-table_wrapper .dataTables_paginate .paginate_button.current {
+        background-color: #007bff !important;
+        color: white !important;
+        border: 1px solid #007bff !important;
     }
 </style>
 @endpush
@@ -47,7 +33,6 @@
 <div class="container mt-4">
     <h2 class="mb-3">Yajra DataTables - Users List</h2>
 
-    <!-- Flash Messages -->
     @if(session('success'))
         <div class="alert alert-success py-1 px-2">{{ session('success') }}</div>
     @elseif(session('error'))
@@ -71,7 +56,9 @@
 @endsection
 
 @push('script')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script>
     $(document).ready(function () {
         $('#users-table').DataTable({
@@ -79,14 +66,15 @@
             serverSide: true,
             ajax: '{{ route("users.datatable") }}',
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'name', name: 'name' },
                 { data: 'email', name: 'email' },
                 { data: 'contact', name: 'contact' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
             dom: '<"d-flex justify-content-between align-items-center mb-2"lf>rt<"d-flex justify-content-between align-items-center mt-2"ip>'
-            // l = length dropdown (left), f = filter (right), t = table, i = info, p = pagination
         });
     });
 </script>

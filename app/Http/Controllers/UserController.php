@@ -31,10 +31,10 @@ class UserController extends Controller
     public function datatable(Request $request)
     {
         if ($request->ajax()) {
-            $data = User::all();
+            $data = User::query(); // ✅ Proper for server-side pagination
 
             return DataTables::of($data)
-                ->addIndexColumn()
+                ->addIndexColumn() // ✅ For DT_RowIndex column
                 ->addColumn('action', function ($row) {
                     $btn = '<a href="' . route('users.edit', $row->id) . '" class="edit btn btn-primary btn-sm">Edit</a> ';
                     $btn .= '<form action="' . route('users.destroy', $row->id) . '" method="POST" style="display:inline;">
@@ -43,14 +43,14 @@ class UserController extends Controller
                             </form>';
                     return $btn;
                 })
-                ->rawColumns(['action'])
-                ->make(true);
+                ->rawColumns(['action']) // ✅ allow HTML in "action"
+                ->make(true); // ✅ returns draw, recordsTotal, etc.
         }
 
-        // If not ajax (optional: fallback to full table)
+        // Optional non-AJAX fallback view
         $source = Cache::has('all_users') ? 'Cache' : 'Database';
         $users = Cache::remember('all_users', now()->addHours(2), function () {
-            return User::all();
+            return User::get();
         });
 
         return view('users.datatable', compact('users', 'source'));
